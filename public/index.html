@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imperium Imóveis — Gerador de Carrosséis</title>
+<style>
+  :root{
+    --navy:#13304e; --navy-2:#0e2740; --gold:#c8a55a; --gold-lt:#dcc27f;
+    --ink:#12222f; --paper:#f3efe7; --panel:#ffffff; --line:#e2dccf; --muted:#6d7681;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#0f1720; --panel:#16212c; --line:#243441; --muted:#93a1ad; --ink:#eef3f7; }
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--paper); color:var(--ink);
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  .wrap{ display:grid; grid-template-columns:380px 1fr; gap:0; min-height:100vh; }
+  @media(max-width:900px){ .wrap{ grid-template-columns:1fr; } }
+
+  .panel{ background:var(--navy); color:#fff; padding:22px 20px 60px;
+    position:sticky; top:52px; align-self:start; height:calc(100vh - 52px); overflow-y:auto; }
+  @media(max-width:900px){ .panel{ position:static; height:auto; } }
+
+  /* abas */
+  .tabs{ position:sticky; top:0; z-index:40; display:flex; background:var(--navy-2);
+    border-bottom:1px solid rgba(255,255,255,.1); }
+  .tabs .tab{ background:none; border:none; color:#9fb0bf; font-family:inherit; font-weight:700;
+    font-size:13px; padding:16px 24px; cursor:pointer; letter-spacing:.03em; border-bottom:3px solid transparent; }
+  .tabs .tab.active{ color:#fff; border-bottom-color:var(--gold); }
+  .tabs .tab:hover{ color:#fff; }
+
+  /* view post único */
+  .single-wrap{ display:grid; grid-template-columns:380px 1fr; min-height:calc(100vh - 52px); }
+  @media(max-width:900px){ .single-wrap{ grid-template-columns:1fr; } }
+  textarea{ width:100%; background:var(--navy-2); border:1px solid rgba(255,255,255,.14); color:#fff;
+    border-radius:8px; padding:9px 11px; font-size:13px; margin-bottom:11px; font-family:inherit;
+    resize:vertical; min-height:120px; line-height:1.45; }
+  textarea:focus{ outline:2px solid var(--gold); border-color:var(--gold); }
+  .single-stage{ padding:24px; }
+  .single-stage .actions{ margin-bottom:16px; }
+  .single-card{ background:#0b0f14; border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; max-width:430px; box-shadow:0 2px 10px rgba(0,0,0,.06); font-size:0; }
+  .single-card canvas{ width:100%; height:auto; display:block; }
+  .brand{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .brand .em{ width:34px; height:44px; }
+  .brand h1{ font-size:16px; margin:0; letter-spacing:.14em; font-weight:800; }
+  .brand p{ margin:2px 0 0; font-size:11px; letter-spacing:.34em; color:var(--gold); }
+
+  .grp{ border-top:1px solid rgba(255,255,255,.12); padding:16px 0 4px; }
+  .grp h2{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold-lt); margin:0 0 12px; font-weight:700; }
+  label{ display:block; font-size:11px; color:#c7d2dc; margin:0 0 5px; letter-spacing:.02em; }
+  input[type=text]{ width:100%; background:var(--navy-2); border:1px solid rgba(255,255,255,.14);
+    color:#fff; border-radius:8px; padding:9px 11px; font-size:13px; margin-bottom:11px; font-family:inherit; }
+  input[type=text]:focus{ outline:2px solid var(--gold); outline-offset:0; border-color:var(--gold); }
+  .filebtn{ display:block; text-align:center; background:var(--gold); color:var(--navy);
+    font-weight:800; padding:11px; border-radius:8px; cursor:pointer; font-size:13px; letter-spacing:.02em; margin-bottom:8px; }
+  .filebtn:hover{ background:var(--gold-lt); }
+  .filebtn input{ display:none; }
+  .hint{ font-size:11px; color:#93a6b6; line-height:1.5; margin:0 0 12px; }
+  .thumbs{ display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:10px; }
+  .thumbs .t{ aspect-ratio:4/5; border-radius:5px; background:var(--navy-2) center/cover no-repeat;
+    border:1px solid rgba(255,255,255,.12); position:relative; font-size:11px; color:#7f93a3;
+    display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer; }
+  .thumbs .t.card{ outline:2px solid var(--gold); }
+  .thumbs .t.empty{ border-style:dashed; }
+  .t .idx{ position:absolute; top:2px; left:3px; font-size:9px; font-weight:800;
+    background:rgba(0,0,0,.55); color:#fff; padding:1px 4px; border-radius:3px; letter-spacing:.02em; }
+  .t.card .idx{ background:var(--gold); color:var(--navy); }
+  .t .ctl{ position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:space-between;
+    background:rgba(0,0,0,.5); padding:1px 2px; }
+  .t .ctl button{ background:none; border:none; color:#fff; font-size:13px; cursor:pointer; padding:0 1px; line-height:1.1; }
+  .t .ctl button:hover{ color:var(--gold); }
+  .t .ctl .rm:hover{ color:#ff8a80; }
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
+
+  .stage{ padding:24px; }
+  .stage-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+  .stage-head h2{ margin:0; font-size:15px; letter-spacing:.02em; }
+  .stage-head .sub{ color:var(--muted); font-size:12px; }
+  .actions{ display:flex; gap:8px; }
+  .btn{ background:var(--navy); color:#fff; border:none; border-radius:8px; padding:10px 16px;
+    font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; }
+  .btn.gold{ background:var(--gold); color:var(--navy); }
+  .btn:hover{ filter:brightness(1.08); }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:18px; }
+  .slide{ background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .slide canvas{ width:100%; height:auto; display:block; }
+  .slide .bar{ display:flex; align-items:center; justify-content:space-between; padding:8px 11px; }
+  .slide .bar span{ font-size:11px; color:var(--muted); font-weight:700; letter-spacing:.04em; }
+  .slide .bar button{ background:none; border:1px solid var(--line); color:var(--ink); border-radius:6px;
+    font-size:11px; padding:4px 9px; cursor:pointer; font-family:inherit; }
+  .slide .bar button:hover{ background:var(--gold); border-color:var(--gold); color:var(--navy); }
+  .slide .bar .grp2{ display:flex; gap:6px; }
+
+  #lb{ display:none; position:fixed; inset:0; background:rgba(6,14,22,.86); z-index:50; align-items:center; justify-content:center; padding:20px; }
+  .lb-inner{ background:var(--panel); border-radius:12px; max-width:min(92vw,560px); width:100%; max-height:92vh; overflow:auto; padding:14px; }
+  .lb-bar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .lb-bar span{ font-weight:800; font-size:14px; }
+  #lbImg{ width:100%; height:auto; border-radius:8px; display:block; }
+  .lb-tip{ font-size:12px; color:var(--muted); margin:10px 2px 2px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="tabs">
+  <button class="tab active" data-tab="carousel">Carrossel (10 artes)</button>
+  <button class="tab" data-tab="single">Post único</button>
+</div>
+
+<div id="viewCarousel">
+<div class="wrap">
+  <aside class="panel">
+    <div class="brand">
+      <canvas class="em" id="brandEm" width="68" height="88"></canvas>
+      <div><h1>IMPERIUM</h1><p>IMÓVEIS</p></div>
+    </div>
+
+    <div class="grp">
+      <h2>Fotos do imóvel</h2>
+      <label class="filebtn">Adicionar fotos
+        <input type="file" id="photos" accept="image/*" multiple>
+      </label>
+      <input type="file" id="slotInput" accept="image/*" style="display:none">
+      <p class="hint">Preenche os slots vazios na ordem. Passe o mouse sobre cada foto para <b>reordenar (◀ ▶)</b>, trocar (clique na foto) ou remover (✕). O slot <b>10 · CARD</b> (dourado) é o fundo do card final — coloque a foto aérea nele.</p>
+      <div class="thumbs" id="thumbs"></div>
+      <label class="filebtn" style="background:var(--navy-2);color:#fff;border:1px solid rgba(255,255,255,.14)">Trocar logo (opcional)
+        <input type="file" id="logo" accept="image/*">
+      </label>
+      <p class="hint">O logo padrão é o <b>logo.png</b> da pasta do projeto. Use este botão só para testar outro.</p>
+    </div>
+
+    <div class="grp">
+      <h2>Slide 1 — capa</h2>
+      <label>Linha 1</label>
+      <input type="text" id="t1a" value="Apartamento à venda">
+      <label>Linha 2</label>
+      <input type="text" id="t1b" value="Bairro Navegantes">
+    </div>
+
+    <div class="grp">
+      <h2>Slides 2–9 — faixas</h2>
+      <div id="midInputs"></div>
+    </div>
+
+    <div class="grp">
+      <h2>Slide 10 — card final</h2>
+      <label>Título linha 1</label>
+      <input type="text" id="cT1" value="APARTAMENTO À VENDA">
+      <label>Título linha 2</label>
+      <input type="text" id="cT2" value="ALTO PADRÃO">
+      <label>Subtítulo</label>
+      <input type="text" id="cSub" value="Apartamento no bairro Navegantes em Capão da Canoa">
+      <div class="two">
+        <div><label>Item 1 (sofá)</label><input type="text" id="cF1" value="Mobiliado e decorado"></div>
+        <div><label>Item 2 (área)</label><input type="text" id="cF2" value="64m²"></div>
+        <div><label>Item 3 (cama)</label><input type="text" id="cF3" value="01 dormitório"></div>
+        <div><label>Item 4 (vaga)</label><input type="text" id="cF4" value="01 vaga"></div>
+      </div>
+      <label>Valor</label>
+      <input type="text" id="cPrice" value="R$ 550.000,00">
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="stage-head">
+      <div>
+        <h2>Pré-visualização — 1080 × 1350</h2>
+        <div class="sub">10 artes • atualiza em tempo real</div>
+      </div>
+      <div class="actions">
+        <button class="btn gold" id="dlAll">Baixar todas (PNG)</button>
+      </div>
+    </div>
+    <p class="sub" style="margin:14px 2px 0">Rodando local, o botão <b>Baixar</b> salva direto. Se algum navegador bloquear, use <b>Abrir</b> e salve manualmente.</p>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+</div><!-- /viewCarousel -->
+
+<div id="viewSingle" style="display:none">
+  <div class="single-wrap">
+    <aside class="panel">
+      <div class="grp" style="border-top:none">
+        <h2>Post único — informativo</h2>
+        <label>Etiqueta (canto superior esquerdo)</label>
+        <input type="text" id="sTag" value="Capão da Canoa">
+        <label>Manchete</label>
+        <textarea id="sHead">Praça Flávio Boianovski passará por revitalização de R$750.000,00 em Capão da Canoa</textarea>
+        <label>Botão inferior</label>
+        <input type="text" id="sBtn" value="Leia a legenda">
+        <label class="filebtn">Foto do post
+          <input type="file" id="sPhoto" accept="image/*">
+        </label>
+        <p class="hint">Uma única foto. O logo é o mesmo padrão. A manchete ajusta o tamanho automaticamente. Formato 1080 × 1350.</p>
+      </div>
+    </aside>
+    <main class="single-stage">
+      <div class="actions">
+        <button class="btn" id="sOpen">Abrir</button>
+        <button class="btn gold" id="sDl">Baixar PNG</button>
+      </div>
+      <div class="single-card"><canvas id="cvS" width="1080" height="1350"></canvas></div>
+    </main>
+  </div>
+</div>
+
+<div id="lb">
+  <div class="lb-inner">
+    <div class="lb-bar"><span id="lbCap"></span>
+      <div><a id="lbLink" class="btn gold" style="text-decoration:none">Baixar</a>
+      <button id="lbClose" class="btn">Fechar</button></div></div>
+    <img id="lbImg" alt="">
+    <p class="lb-tip">Clique com o botão direito na imagem → <b>Salvar imagem como…</b> (no celular, segure a imagem e escolha salvar).</p>
+  </div>
+</div>
+
+<script src="logo-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

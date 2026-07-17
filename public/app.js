@@ -461,7 +461,9 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   const v=t.dataset.tab;
   document.getElementById("viewCarousel").style.display = v==="carousel"?"":"none";
   document.getElementById("viewSingle").style.display   = v==="single"?"":"none";
+  document.getElementById("viewFest").style.display     = v==="fest"?"":"none";
   if(v==="single") drawSingle();
+  if(v==="fest") renderFest();
 });
 
 /* controles do post único */
@@ -476,6 +478,201 @@ document.getElementById("sPhoto").onchange=e=>{
 };
 document.getElementById("sDl").onclick=()=>dlCanvasEl(document.getElementById("cvS"),"imperium-post.png");
 document.getElementById("sOpen").onclick=()=>openLightboxCanvas(document.getElementById("cvS"),"Post único","imperium-post.png");
+
+/* ========================================================================
+   CARROSSEL TEMÁTICO (Festival) — 1 capa + (foto artista + card azul) por dia
+   ======================================================================== */
+const fState={ tag:"Capão da Canoa", days:5,
+  cover:{ photo:null, title:"Festival de Inverno", sub:"Capão da Canoa 2026" },
+  day:[] };
+function defDay(i){ return { title:"Dia "+(i+1), photo:null, artist:"Nome do Artista",
+  lineup:"20h — Banda de abertura\n22h — Atração principal" }; }
+function ensureDays(){
+  while(fState.day.length<fState.days) fState.day.push(defDay(fState.day.length));
+  fState.day.length=fState.days;
+}
+function festArtCount(){ return 1+2*fState.days; }
+function festLabel(i){ if(i===0) return "Arte 1 · Capa";
+  const d=Math.floor((i-1)/2), s=(i-1)%2;
+  return `Arte ${i+1} · Dia ${d+1} ${s===0?"(foto)":"(card)"}`; }
+function festFile(i){ return `festival-${String(i+1).padStart(2,"0")}.png`; }
+
+/* helpers de composição (reaproveitados) */
+function blurBg(ctx,photo,dark){
+  if(!photo){ cover(ctx,null,0,0,W,H); return; }
+  ctx.save(); ctx.fillStyle="#0a0c0e"; ctx.fillRect(0,0,W,H);
+  ctx.filter="blur(36px)"; cover(ctx,photo,-60,-60,W+120,H+120); ctx.filter="none"; ctx.restore();
+  ctx.fillStyle=`rgba(6,8,10,${dark==null?0.5:dark})`; ctx.fillRect(0,0,W,H);
+}
+function topTag(ctx,tag){
+  ctx.textBaseline="middle"; ctx.textAlign="left"; ctx.font="800 34px Arial";
+  const tpad=28,tph=64,ttop=40,tw=ctx.measureText(tag||"").width;
+  ctx.fillStyle=GOLD; rr(ctx,40,ttop,tw+tpad*2,tph,tph/2); ctx.fill();
+  ctx.fillStyle=NAVY; ctx.fillText(tag||"",40+tpad,ttop+tph/2+2);
+}
+function topLogo(ctx){ logoBox(ctx, W-40-300, 30, 300, 132); }
+function scrimBottom(ctx,photo,fromY){
+  const base=photo?avgColor(photo):[18,22,30];
+  const r=Math.round(base[0]*0.13),g=Math.round(base[1]*0.13),b=Math.round(base[2]*0.13);
+  const gg=ctx.createLinearGradient(0,fromY,0,H);
+  gg.addColorStop(0,`rgba(${r},${g},${b},0)`);
+  gg.addColorStop(0.55,`rgba(${r},${g},${b},0.85)`);
+  gg.addColorStop(1,`rgba(${r},${g},${b},0.97)`);
+  ctx.fillStyle=gg; ctx.fillRect(0,fromY,W,H-fromY);
+}
+function scrimTopDark(ctx){
+  const gg=ctx.createLinearGradient(0,0,0,240);
+  gg.addColorStop(0,"rgba(0,0,0,0.45)"); gg.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=gg; ctx.fillRect(0,0,W,240);
+}
+/* título grande branco ancorado embaixo, com um "eyebrow" dourado por cima */
+function heroText(ctx,eyebrow,title,maxLinesH){
+  const hx=48, maxW=W-96, floor=1250;
+  let size=100, lines=[];
+  for(; size>=38; size-=3){ ctx.font=`900 ${size}px Arial`;
+    lines=wrapLines(ctx,title||"",maxW);
+    if(lines.length*(size*1.03) <= maxLinesH) break; }
+  const lh=size*1.03, totalH=lines.length*lh, startY=floor-totalH;
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+  if(eyebrow){ ctx.fillStyle=GOLD; ctx.font="800 34px Arial";
+    spaced(ctx,eyebrow.toUpperCase(),hx,startY-24,2); }
+  ctx.fillStyle="#fff"; ctx.textBaseline="top";
+  ctx.shadowColor="rgba(0,0,0,0.5)"; ctx.shadowBlur=10; ctx.shadowOffsetY=2;
+  ctx.font=`900 ${size}px Arial`;
+  lines.forEach((ln,i)=>ctx.fillText(ln,hx,startY+i*lh));
+  ctx.shadowColor="transparent"; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+}
+
+function drawFestCover(ctx){
+  const p=fState.cover.photo;
+  cover(ctx,p,0,0,W,H);
+  scrimTopDark(ctx); scrimBottom(ctx,p,Math.round(H*0.42));
+  topTag(ctx,fState.tag); topLogo(ctx);
+  heroText(ctx, fState.cover.sub, fState.cover.title, 520);
+}
+function drawFestArtist(ctx,d){
+  const day=fState.day[d], p=day.photo;
+  cover(ctx,p,0,0,W,H);
+  scrimTopDark(ctx); scrimBottom(ctx,p,Math.round(H*0.45));
+  topTag(ctx,fState.tag); topLogo(ctx);
+  heroText(ctx, day.title, day.artist, 440);
+}
+function parseLineup(line){
+  for(const sep of ["—","–","|"]){ const k=line.indexOf(sep);
+    if(k>=0) return { time:line.slice(0,k).trim(), name:line.slice(k+sep.length).trim() }; }
+  const k=line.indexOf(" - "); if(k>=0) return { time:line.slice(0,k).trim(), name:line.slice(k+3).trim() };
+  const t=line.match(/^(\d{1,2}h(?:\d{2})?)\s+(.*)$/i);
+  if(t) return { time:t[1], name:t[2] };
+  return { time:"", name:line };
+}
+function drawFestCard(ctx,d){
+  const day=fState.day[d], p=day.photo;
+  if(p) blurBg(ctx,p,0.68);
+  else { const gg=ctx.createLinearGradient(0,0,0,H);
+    gg.addColorStop(0,"#0e2740"); gg.addColorStop(1,"#0a1a2c"); ctx.fillStyle=gg; ctx.fillRect(0,0,W,H); }
+  topTag(ctx,fState.tag); topLogo(ctx);
+
+  // card azul
+  const x=60,y=200,w=W-120,y2=1215,h=y2-y, cx=W/2;
+  ctx.fillStyle="rgba(16,40,66,0.95)"; rr(ctx,x,y,w,h,38); ctx.fill();
+  ctx.lineWidth=3; ctx.strokeStyle="rgba(200,165,90,0.85)"; rr(ctx,x+7,y+7,w-14,h-14,32); ctx.stroke();
+
+  // título do dia
+  ctx.textAlign="center"; ctx.textBaseline="top"; ctx.fillStyle="#fff"; ctx.font="900 56px Arial";
+  const tLines=wrapLines(ctx, day.title||"", w-140);
+  let ty=y+56; tLines.forEach(l=>{ ctx.fillText(l,cx,ty); ty+=62; });
+  // eyebrow LINE-UP + divisor
+  ty+=6; ctx.fillStyle=GOLD; ctx.font="800 26px Arial"; spacedCenter(ctx,"LINE-UP",cx,ty,5); ty+=42;
+  ctx.strokeStyle=GOLD; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(x+70,ty); ctx.lineTo(x+w-70,ty); ctx.stroke(); ty+=28;
+
+  // lista de artistas + horários (auto-ajuste)
+  const items=(day.lineup||"").split("\n").map(s=>s.trim()).filter(Boolean).map(parseLineup);
+  const listTop=ty, listBottom=y2-56, avail=listBottom-listTop, n=Math.max(items.length,1);
+  let fs=Math.max(24, Math.min(48, Math.floor(avail/n*0.60)));
+  const rowH=avail/n;
+  ctx.font=`800 ${fs}px Arial`;
+  let timeW=0; items.forEach(it=>{ if(it.time) timeW=Math.max(timeW, ctx.measureText(it.time).width); });
+  const lx=x+72, nameX=lx+(timeW?timeW+26:0);
+  items.forEach((it,i)=>{
+    const yy=listTop+rowH*i+rowH/2;
+    ctx.textBaseline="middle"; ctx.textAlign="left";
+    if(it.time){ ctx.fillStyle=GOLD; ctx.font=`800 ${fs}px Arial`; ctx.fillText(it.time,lx,yy); }
+    ctx.fillStyle="#fff"; ctx.font=`700 ${fs}px Arial`; ctx.fillText(it.name,nameX,yy);
+  });
+}
+
+function renderFestArt(i){
+  const cv=document.getElementById("fcv"+i); if(!cv) return;
+  const ctx=cv.getContext("2d"); ctx.clearRect(0,0,W,H);
+  if(i===0){ drawFestCover(ctx); return; }
+  const d=Math.floor((i-1)/2), s=(i-1)%2;
+  if(s===0) drawFestArtist(ctx,d); else drawFestCard(ctx,d);
+}
+function buildFestGrid(){
+  const grid=document.getElementById("fGrid"); if(!grid) return;
+  grid.innerHTML=""; const n=festArtCount();
+  document.getElementById("fCount").textContent=n+" artes";
+  for(let i=0;i<n;i++){
+    const d=document.createElement("div"); d.className="slide";
+    d.innerHTML=`<canvas id="fcv${i}" width="${W}" height="${H}"></canvas>
+      <div class="bar"><span>${festLabel(i)}</span>
+      <div class="grp2"><button data-fopen="${i}">Abrir</button><button data-fdl="${i}">Baixar</button></div></div>`;
+    grid.appendChild(d);
+  }
+  grid.querySelectorAll("button[data-fdl]").forEach(b=>b.onclick=()=>dlCanvasEl(document.getElementById("fcv"+b.dataset.fdl),festFile(+b.dataset.fdl)));
+  grid.querySelectorAll("button[data-fopen]").forEach(b=>b.onclick=()=>openLightboxCanvas(document.getElementById("fcv"+b.dataset.fopen),festLabel(+b.dataset.fopen),festFile(+b.dataset.fopen)));
+}
+function renderFest(){
+  ensureDays();
+  if(document.querySelectorAll("#fGrid .slide").length!==festArtCount()) buildFestGrid();
+  for(let i=0;i<festArtCount();i++) renderFestArt(i);
+}
+function buildFestDayControls(){
+  ensureDays();
+  const wrap=document.getElementById("fDaysWrap"); if(!wrap) return; wrap.innerHTML="";
+  for(let d=0; d<fState.days; d++){
+    const day=fState.day[d];
+    const g=document.createElement("div"); g.className="grp";
+    g.innerHTML=`<h2>Dia ${d+1}</h2>
+      <label>Título do dia</label><input type="text" class="ft-title">
+      <label class="filebtn">Foto do artista (arte ${2+2*d})<input type="file" class="ft-photo" accept="image/*"></label>
+      <div class="fthumb"></div>
+      <label>Nome/legenda na foto (arte ${2+2*d})</label><input type="text" class="ft-artist">
+      <label>Line-up do card (arte ${3+2*d}) — uma linha por artista: <b>20h — Banda</b></label>
+      <textarea class="ft-lineup"></textarea>`;
+    const ti=g.querySelector(".ft-title"); ti.value=day.title;
+    ti.oninput=()=>{ day.title=ti.value; renderFestArt(1+2*d); renderFestArt(2+2*d); };
+    const ar=g.querySelector(".ft-artist"); ar.value=day.artist;
+    ar.oninput=()=>{ day.artist=ar.value; renderFestArt(1+2*d); };
+    const lu=g.querySelector(".ft-lineup"); lu.value=day.lineup;
+    lu.oninput=()=>{ day.lineup=lu.value; renderFestArt(2+2*d); };
+    const thumb=g.querySelector(".fthumb");
+    const showThumb=()=>{ if(day.photo){ thumb.classList.add("has"); thumb.style.backgroundImage=`url(${day.photo.src})`; } else thumb.classList.remove("has"); };
+    g.querySelector(".ft-photo").onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+      const img=new Image(); img.onload=()=>{ day.photo=img; showThumb(); renderFestArt(1+2*d); renderFestArt(2+2*d); }; img.src=URL.createObjectURL(f); };
+    showThumb();
+    wrap.appendChild(g);
+  }
+}
+function buildFestUI(){ buildFestDayControls(); buildFestGrid(); }
+
+/* controles gerais do festival */
+(function(){
+  const tag=document.getElementById("fTag"); if(tag){ fState.tag=tag.value;
+    tag.oninput=()=>{ fState.tag=tag.value; renderFest(); }; }
+  const days=document.getElementById("fDays");
+  if(days){ days.onchange=()=>{ let v=parseInt(days.value)||5; v=Math.max(1,Math.min(7,v)); days.value=v;
+    fState.days=v; buildFestUI(); renderFest(); }; }
+  const ct=document.getElementById("fCoverTitle"); if(ct){ fState.cover.title=ct.value;
+    ct.oninput=()=>{ fState.cover.title=ct.value; renderFestArt(0); }; }
+  const cs=document.getElementById("fCoverSub"); if(cs){ fState.cover.sub=cs.value;
+    cs.oninput=()=>{ fState.cover.sub=cs.value; renderFestArt(0); }; }
+  const cp=document.getElementById("fCoverPhoto");
+  if(cp){ cp.onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+    const img=new Image(); img.onload=()=>{ fState.cover.photo=img; renderFestArt(0); }; img.src=URL.createObjectURL(f); }; }
+  const dl=document.getElementById("fDlAll");
+  if(dl){ dl.onclick=async()=>{ for(let i=0;i<festArtCount();i++){ await dlCanvasEl(document.getElementById("fcv"+i),festFile(i)); await new Promise(r=>setTimeout(r,400)); } }; }
+})();
 
 /* ---------- logo: recorte inteligente (transparência OU fundo sólido) ---------- */
 function trimLogo(img){
@@ -508,6 +705,7 @@ function setLogo(img){
   state.logo=trimLogo(img);
   renderAll();
   drawSingle();
+  renderFest();
 }
 document.getElementById("logo").onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -534,9 +732,9 @@ document.getElementById("logo").onchange=e=>{
 /* emblema do topo da barra lateral */
 (function(){ const c=document.getElementById("brandEm"); emblem(c.getContext("2d"),34,44,80,GOLD); })();
 
-drawThumbs(); renderAll(); drawSingle();
+drawThumbs(); renderAll(); drawSingle(); buildFestUI(); renderFest();
 
-/* abrir direto numa aba via ?tab=single */
-if(new URLSearchParams(location.search).get("tab")==="single"){
-  const t=document.querySelector('.tab[data-tab="single"]'); if(t) t.click();
-}
+/* abrir direto numa aba via ?tab=single|fest */
+(function(){ const q=new URLSearchParams(location.search).get("tab");
+  if(q==="single"||q==="fest"){ const t=document.querySelector(`.tab[data-tab="${q}"]`); if(t) t.click(); }
+})();

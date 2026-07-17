@@ -50,9 +50,12 @@
   .grp{ border-top:1px solid rgba(255,255,255,.12); padding:16px 0 4px; }
   .grp h2{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold-lt); margin:0 0 12px; font-weight:700; }
   label{ display:block; font-size:11px; color:#c7d2dc; margin:0 0 5px; letter-spacing:.02em; }
-  input[type=text]{ width:100%; background:var(--navy-2); border:1px solid rgba(255,255,255,.14);
+  input[type=text],input[type=number]{ width:100%; background:var(--navy-2); border:1px solid rgba(255,255,255,.14);
     color:#fff; border-radius:8px; padding:9px 11px; font-size:13px; margin-bottom:11px; font-family:inherit; }
-  input[type=text]:focus{ outline:2px solid var(--gold); outline-offset:0; border-color:var(--gold); }
+  input[type=text]:focus,input[type=number]:focus{ outline:2px solid var(--gold); outline-offset:0; border-color:var(--gold); }
+  .fthumb{ display:none; }
+  .fthumb.has{ display:block; height:74px; border-radius:6px; background:#0e2740 center/cover no-repeat;
+    margin:0 0 10px; border:1px solid rgba(255,255,255,.14); }
   .filebtn{ display:block; text-align:center; background:var(--gold); color:var(--navy);
     font-weight:800; padding:11px; border-radius:8px; cursor:pointer; font-size:13px; letter-spacing:.02em; margin-bottom:8px; }
   .filebtn:hover{ background:var(--gold-lt); }
@@ -105,6 +108,7 @@
 <div class="tabs">
   <button class="tab active" data-tab="carousel">Carrossel (10 artes)</button>
   <button class="tab" data-tab="single">Post único</button>
+  <button class="tab" data-tab="fest">Carrossel temático</button>
 </div>
 
 <div id="viewCarousel">
@@ -200,6 +204,38 @@
         <button class="btn gold" id="sDl">Baixar PNG</button>
       </div>
       <div class="single-card"><canvas id="cvS" width="1080" height="1350"></canvas></div>
+    </main>
+  </div>
+</div>
+
+<div id="viewFest" style="display:none">
+  <div class="wrap">
+    <aside class="panel">
+      <div class="grp" style="border-top:none">
+        <h2>Carrossel temático — Festival</h2>
+        <label>Etiqueta (canto superior)</label>
+        <input type="text" id="fTag" value="Capão da Canoa">
+        <label>Número de dias (gera 1 + 2 por dia)</label>
+        <input type="number" id="fDays" min="1" max="7" value="5">
+        <p class="hint">Estrutura: <b>Arte 1 = capa</b>. Depois, por dia: <b>foto do artista</b> + <b>card azul com o line-up</b>. 5 dias = 11 artes.</p>
+      </div>
+      <div class="grp">
+        <h2>Arte 1 — Capa</h2>
+        <label class="filebtn">Foto da capa<input type="file" id="fCoverPhoto" accept="image/*"></label>
+        <label>Título</label>
+        <input type="text" id="fCoverTitle" value="Festival de Inverno">
+        <label>Subtítulo (dourado)</label>
+        <input type="text" id="fCoverSub" value="Capão da Canoa 2026">
+      </div>
+      <div id="fDaysWrap"></div>
+    </aside>
+    <main class="stage">
+      <div class="stage-head">
+        <div><h2>Carrossel temático — 1080 × 1350</h2><div class="sub" id="fCount">11 artes</div></div>
+        <div class="actions"><button class="btn gold" id="fDlAll">Baixar todas (PNG)</button></div>
+      </div>
+      <p class="sub" style="margin:14px 2px 0">Cada dia: 1 foto de artista + 1 card azul com todos os artistas e horários. Edite tudo à esquerda.</p>
+      <div class="grid" id="fGrid"></div>
     </main>
   </div>
 </div>

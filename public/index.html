@@ -109,6 +109,7 @@
   <button class="tab active" data-tab="carousel">Carrossel (10 artes)</button>
   <button class="tab" data-tab="single">Post único</button>
   <button class="tab" data-tab="fest">Carrossel temático</button>
+  <button class="tab" data-tab="cinco">Carrossel 5 cards</button>
 </div>
 
 <div id="viewCarousel">
@@ -236,6 +237,59 @@
       </div>
       <p class="sub" style="margin:14px 2px 0">Cada dia: 1 foto de artista + 1 card azul com todos os artistas e horários. Edite tudo à esquerda.</p>
       <div class="grid" id="fGrid"></div>
+    </main>
+  </div>
+</div>
+
+<div id="viewCinco" style="display:none">
+  <div class="wrap">
+    <aside class="panel">
+      <div class="grp" style="border-top:none">
+        <h2>Carrossel 5 cards</h2>
+        <label>Etiqueta (canto superior)</label>
+        <input type="text" id="gTag" value="Imperium Imóveis">
+        <p class="hint">5 cards: <b>1 capa</b>, <b>3 de conteúdo</b> e <b>1 final</b>. Fotos são opcionais em todos.</p>
+      </div>
+      <div class="grp">
+        <h2>Card 1 — Capa (head)</h2>
+        <label class="filebtn">Foto da capa (opcional)<input type="file" id="gHeadPhoto" accept="image/*"></label>
+        <label>Título</label>
+        <input type="text" id="gHeadTitle" value="5 dicas para vender seu imóvel mais rápido">
+        <label>Subtítulo (dourado)</label>
+        <input type="text" id="gHeadSub" value="Imperium Imóveis">
+      </div>
+      <div class="grp">
+        <h2>Card 2 — Info</h2>
+        <label class="filebtn">Foto (opcional)<input type="file" class="ginfo-photo" data-i="0" accept="image/*"></label>
+        <label>Título</label><input type="text" class="ginfo-title" data-i="0">
+        <label>Texto</label><textarea class="ginfo-body" data-i="0"></textarea>
+      </div>
+      <div class="grp">
+        <h2>Card 3 — Info</h2>
+        <label class="filebtn">Foto (opcional)<input type="file" class="ginfo-photo" data-i="1" accept="image/*"></label>
+        <label>Título</label><input type="text" class="ginfo-title" data-i="1">
+        <label>Texto</label><textarea class="ginfo-body" data-i="1"></textarea>
+      </div>
+      <div class="grp">
+        <h2>Card 4 — Info</h2>
+        <label class="filebtn">Foto (opcional)<input type="file" class="ginfo-photo" data-i="2" accept="image/*"></label>
+        <label>Título</label><input type="text" class="ginfo-title" data-i="2">
+        <label>Texto</label><textarea class="ginfo-body" data-i="2"></textarea>
+      </div>
+      <div class="grp">
+        <h2>Card 5 — Final</h2>
+        <label class="filebtn">Foto de fundo (opcional)<input type="file" id="gFinalPhoto" accept="image/*"></label>
+        <label>Título</label><input type="text" id="gFinalTitle" value="Quer comprar ou vender com segurança?">
+        <label>Subtítulo (dourado)</label><input type="text" id="gFinalSub" value="Fale com a Imperium Imóveis">
+        <label>Botão / CTA</label><input type="text" id="gFinalCta" value="Entre em contato">
+      </div>
+    </aside>
+    <main class="stage">
+      <div class="stage-head">
+        <div><h2>Carrossel 5 cards — 1080 × 1350</h2><div class="sub">5 cards • atualiza em tempo real</div></div>
+        <div class="actions"><button class="btn gold" id="gDlAll">Baixar todas (PNG)</button></div>
+      </div>
+      <div class="grid" id="gGrid"></div>
     </main>
   </div>
 </div>

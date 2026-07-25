@@ -462,8 +462,10 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.getElementById("viewCarousel").style.display = v==="carousel"?"":"none";
   document.getElementById("viewSingle").style.display   = v==="single"?"":"none";
   document.getElementById("viewFest").style.display     = v==="fest"?"":"none";
+  document.getElementById("viewCinco").style.display    = v==="cinco"?"":"none";
   if(v==="single") drawSingle();
   if(v==="fest") renderFest();
+  if(v==="cinco") renderCinco();
 });
 
 /* controles do post único */
@@ -674,6 +676,144 @@ function buildFestUI(){ buildFestDayControls(); buildFestGrid(); }
   if(dl){ dl.onclick=async()=>{ for(let i=0;i<festArtCount();i++){ await dlCanvasEl(document.getElementById("fcv"+i),festFile(i)); await new Promise(r=>setTimeout(r,400)); } }; }
 })();
 
+/* ========================================================================
+   CARROSSEL 5 CARDS — capa + 3 info + final (identidade Imperium)
+   ======================================================================== */
+const gState={ tag:"Imperium Imóveis",
+  head:{ photo:null, title:"5 dicas para vender seu imóvel mais rápido", sub:"Imperium Imóveis" },
+  info:[
+    { photo:null, title:"1. Preço certo", body:"Um imóvel bem precificado atrai mais visitas e vende mais rápido. Pesquise imóveis parecidos na região antes de definir o valor." },
+    { photo:null, title:"2. Boas fotos", body:"Ambientes organizados e bem iluminados fazem toda a diferença no primeiro clique de quem procura um imóvel." },
+    { photo:null, title:"3. Documentação em dia", body:"Deixe a documentação regularizada para a negociação não travar na reta final da venda." },
+  ],
+  final:{ photo:null, title:"Quer comprar ou vender com segurança?", sub:"Fale com a Imperium Imóveis", cta:"Entre em contato" } };
+
+function navyBg(ctx){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,"#14324f"); g.addColorStop(1,"#0b1d31");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+function logoCentered(ctx,cy,targetW){
+  if(state.logo){ const img=state.logo, ir=img.width/img.height, dw=targetW, dh=dw/ir;
+    ctx.drawImage(img, W/2-dw/2, cy-dh/2, dw, dh); }
+  else { emblem(ctx,W/2,cy-16,120,GOLD);
+    ctx.fillStyle="#fff"; ctx.font="600 42px Georgia,'Times New Roman',serif"; ctx.textAlign="center";
+    spacedCenter(ctx,"IMPERIUM",W/2,cy+70,2);
+    ctx.fillStyle=GOLD; ctx.font="500 18px Georgia,'Times New Roman',serif";
+    spacedCenter(ctx,"IMÓVEIS",W/2,cy+96,8); }
+}
+
+function drawCincoHead(ctx){
+  const h=gState.head;
+  if(h.photo){ cover(ctx,h.photo,0,0,W,H); scrimTopDark(ctx); scrimBottom(ctx,h.photo,Math.round(H*0.40)); }
+  else navyBg(ctx);
+  topTag(ctx,gState.tag); topLogo(ctx);
+  heroText(ctx, h.sub, h.title, 560);
+}
+function drawCincoInfo(ctx,i){
+  const c=gState.info[i];
+  navyBg(ctx);
+  let contentTop=320;
+  if(c.photo){
+    const bandH=600; cover(ctx,c.photo,0,0,W,bandH);
+    const g=ctx.createLinearGradient(0,bandH-170,0,bandH);
+    g.addColorStop(0,"rgba(11,29,49,0)"); g.addColorStop(1,"#0f2740");
+    ctx.fillStyle=g; ctx.fillRect(0,bandH-170,W,170);
+    contentTop=bandH+46;
+  }
+  topTag(ctx,gState.tag); topLogo(ctx);
+  const px=70, maxW=W-140;
+  ctx.textAlign="left"; ctx.textBaseline="top";
+  // título
+  let ts=56; let tl=[];
+  for(; ts>=34; ts-=2){ ctx.font=`900 ${ts}px Arial`; tl=wrapLines(ctx,c.title,maxW); if(tl.length<=3) break; }
+  ctx.fillStyle="#fff"; const tlh=ts*1.08; let ty=contentTop;
+  tl.forEach((l,k)=>ctx.fillText(l,px,ty+k*tlh)); ty+=tl.length*tlh+20;
+  // divisor dourado
+  ctx.strokeStyle=GOLD; ctx.lineWidth=5; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(px,ty); ctx.lineTo(px+96,ty); ctx.stroke(); ty+=34;
+  // corpo (auto-ajuste)
+  const bottom=1250; let bs=36, bl=[];
+  for(; bs>=22; bs-=2){ ctx.font=`400 ${bs}px Arial`; bl=wrapLines(ctx,c.body,maxW);
+    if(bl.length*(bs*1.42) <= (bottom-ty)) break; }
+  ctx.font=`400 ${bs}px Arial`; ctx.fillStyle="#dbe4ec"; const blh=bs*1.42;
+  bl.forEach((l,k)=>ctx.fillText(l,px,ty+k*blh));
+}
+function drawCincoFinal(ctx){
+  const f=gState.final;
+  if(f.photo) blurBg(ctx,f.photo,0.72); else navyBg(ctx);
+  logoCentered(ctx, 330, 380);
+  const cx=W/2, maxW=W-170;
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  // título
+  let ts=74, tl=[];
+  for(; ts>=40; ts-=3){ ctx.font=`900 ${ts}px Arial`; tl=wrapLines(ctx,f.title,maxW); if(tl.length*(ts*1.08)<=380) break; }
+  ctx.fillStyle="#fff"; ctx.font=`900 ${ts}px Arial`; const tlh=ts*1.08; let ty=600;
+  tl.forEach((l,k)=>ctx.fillText(l,cx,ty+k*tlh)); ty+=tl.length*tlh+26;
+  // subtítulo dourado
+  ctx.fillStyle=GOLD; ctx.font="600 34px Arial";
+  const sl=wrapLines(ctx,f.sub,maxW); sl.forEach((l,k)=>ctx.fillText(l,cx,ty+k*44));
+  // CTA pill
+  if(f.cta){ ctx.font="800 34px Arial"; const cpad=36, cph=76, cw=ctx.measureText(f.cta).width+cpad*2;
+    const cxx=cx-cw/2, cyy=1146;
+    ctx.fillStyle=GOLD; rr(ctx,cxx,cyy,cw,cph,cph/2); ctx.fill();
+    ctx.fillStyle=NAVY; ctx.textBaseline="middle"; ctx.fillText(f.cta,cx,cyy+cph/2+2); }
+}
+
+function cincoLabel(i){ return ["Card 1 · Capa","Card 2 · Info","Card 3 · Info","Card 4 · Info","Card 5 · Final"][i]; }
+function cincoFile(i){ return `carrossel-${String(i+1).padStart(2,"0")}.png`; }
+function renderCincoArt(i){
+  const cv=document.getElementById("gcv"+i); if(!cv) return;
+  const ctx=cv.getContext("2d"); ctx.clearRect(0,0,W,H);
+  if(i===0) drawCincoHead(ctx);
+  else if(i===4) drawCincoFinal(ctx);
+  else drawCincoInfo(ctx,i-1);
+}
+function buildCincoGrid(){
+  const grid=document.getElementById("gGrid"); if(!grid) return; grid.innerHTML="";
+  for(let i=0;i<5;i++){
+    const d=document.createElement("div"); d.className="slide";
+    d.innerHTML=`<canvas id="gcv${i}" width="${W}" height="${H}"></canvas>
+      <div class="bar"><span>${cincoLabel(i)}</span>
+      <div class="grp2"><button data-gopen="${i}">Abrir</button><button data-gdl="${i}">Baixar</button></div></div>`;
+    grid.appendChild(d);
+  }
+  grid.querySelectorAll("button[data-gdl]").forEach(b=>b.onclick=()=>dlCanvasEl(document.getElementById("gcv"+b.dataset.gdl),cincoFile(+b.dataset.gdl)));
+  grid.querySelectorAll("button[data-gopen]").forEach(b=>b.onclick=()=>openLightboxCanvas(document.getElementById("gcv"+b.dataset.gopen),cincoLabel(+b.dataset.gopen),cincoFile(+b.dataset.gopen)));
+}
+function renderCinco(){
+  if(document.querySelectorAll("#gGrid .slide").length!==5) buildCincoGrid();
+  for(let i=0;i<5;i++) renderCincoArt(i);
+}
+function loadPhotoInto(file, assign, onDone){
+  const img=new Image(); img.onload=()=>{ assign(img); onDone&&onDone(); };
+  img.onerror=()=>alert("Não foi possível carregar a foto."); img.src=URL.createObjectURL(file);
+}
+(function(){
+  const bindTxt=(id,set,arts)=>{ const el=document.getElementById(id); if(!el) return; set(el.value);
+    el.oninput=()=>{ set(el.value); arts.forEach(renderCincoArt); }; };
+  bindTxt("gTag", v=>gState.tag=v, [0,1,2,3]);
+  bindTxt("gHeadTitle", v=>gState.head.title=v, [0]);
+  bindTxt("gHeadSub", v=>gState.head.sub=v, [0]);
+  bindTxt("gFinalTitle", v=>gState.final.title=v, [4]);
+  bindTxt("gFinalSub", v=>gState.final.sub=v, [4]);
+  bindTxt("gFinalCta", v=>gState.final.cta=v, [4]);
+  const hp=document.getElementById("gHeadPhoto");
+  if(hp) hp.onchange=e=>{ const f=e.target.files[0]; if(f) loadPhotoInto(f,img=>gState.head.photo=img,()=>renderCincoArt(0)); };
+  const fp=document.getElementById("gFinalPhoto");
+  if(fp) fp.onchange=e=>{ const f=e.target.files[0]; if(f) loadPhotoInto(f,img=>gState.final.photo=img,()=>renderCincoArt(4)); };
+  // info cards (3)
+  document.querySelectorAll(".ginfo-title").forEach(el=>{ const i=+el.dataset.i; el.value=gState.info[i].title;
+    el.oninput=()=>{ gState.info[i].title=el.value; renderCincoArt(i+1); }; });
+  document.querySelectorAll(".ginfo-body").forEach(el=>{ const i=+el.dataset.i; el.value=gState.info[i].body;
+    el.oninput=()=>{ gState.info[i].body=el.value; renderCincoArt(i+1); }; });
+  document.querySelectorAll(".ginfo-photo").forEach(el=>{ const i=+el.dataset.i;
+    el.onchange=e=>{ const f=e.target.files[0]; if(f) loadPhotoInto(f,img=>gState.info[i].photo=img,()=>renderCincoArt(i+1)); }; });
+  const gt=document.getElementById("gTag"); if(gt) gState.tag=gt.value;
+  const dl=document.getElementById("gDlAll");
+  if(dl) dl.onclick=async()=>{ for(let i=0;i<5;i++){ await dlCanvasEl(document.getElementById("gcv"+i),cincoFile(i)); await new Promise(r=>setTimeout(r,400)); } };
+})();
+
 /* ---------- logo: recorte inteligente (transparência OU fundo sólido) ---------- */
 function trimLogo(img){
   const c=document.createElement("canvas"); c.width=img.width; c.height=img.height;
@@ -706,6 +846,7 @@ function setLogo(img){
   renderAll();
   drawSingle();
   renderFest();
+  renderCinco();
 }
 document.getElementById("logo").onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -732,9 +873,9 @@ document.getElementById("logo").onchange=e=>{
 /* emblema do topo da barra lateral */
 (function(){ const c=document.getElementById("brandEm"); emblem(c.getContext("2d"),34,44,80,GOLD); })();
 
-drawThumbs(); renderAll(); drawSingle(); buildFestUI(); renderFest();
+drawThumbs(); renderAll(); drawSingle(); buildFestUI(); renderFest(); buildCincoGrid(); renderCinco();
 
-/* abrir direto numa aba via ?tab=single|fest */
+/* abrir direto numa aba via ?tab=single|fest|cinco */
 (function(){ const q=new URLSearchParams(location.search).get("tab");
-  if(q==="single"||q==="fest"){ const t=document.querySelector(`.tab[data-tab="${q}"]`); if(t) t.click(); }
+  if(["single","fest","cinco"].includes(q)){ const t=document.querySelector(`.tab[data-tab="${q}"]`); if(t) t.click(); }
 })();

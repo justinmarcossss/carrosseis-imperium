@@ -712,33 +712,65 @@ function drawCincoHead(ctx){
 }
 function drawCincoInfo(ctx,i){
   const c=gState.info[i];
-  navyBg(ctx);
-  let contentTop=320;
+  const px=72, maxW=W-144, bottom=H-86;
+  const RULE_GAP_TOP=26, RULE_H=6, RULE_GAP_BOT=34;
+
+  // mede o bloco de texto para um tamanho de título, devolvendo altura total
+  const measure=(ts)=>{
+    const bs=Math.max(28, Math.round(ts*0.60));
+    ctx.font=`900 ${ts}px Arial`; const tl=wrapLines(ctx,c.title,maxW);
+    ctx.font=`400 ${bs}px Arial`; const bl=wrapLines(ctx,c.body,maxW);
+    const h=tl.length*(ts*1.08)+RULE_GAP_TOP+RULE_H+RULE_GAP_BOT+bl.length*(bs*1.42);
+    return {ts,bs,tl,bl,h};
+  };
+  // maior tamanho que cabe em `avail`; null se nem o mínimo couber
+  const fit=(avail,minTs)=>{
+    for(let ts=76; ts>=minTs; ts-=2){ const m=measure(ts); if(m.h<=avail) return m; }
+    return null;
+  };
+
+  // foto grande por padrão; cede espaço quando o texto é longo
+  const BAND_MAX=820, BAND_MIN=560, GAP=38;
+  let bandH=0, m=null;
   if(c.photo){
-    const bandH=600; cover(ctx,c.photo,0,0,W,bandH);
-    const g=ctx.createLinearGradient(0,bandH-170,0,bandH);
+    for(bandH=BAND_MAX; bandH>=BAND_MIN; bandH-=40){
+      m=fit(bottom-(bandH+GAP), 52); if(m) break;
+    }
+    if(!m){ bandH=BAND_MIN; m=fit(bottom-(bandH+GAP), 34) || measure(34); }
+  } else {
+    m=fit(bottom-300, 40) || measure(40);
+  }
+
+  navyBg(ctx);
+  let contentTop=300;
+  if(c.photo){
+    cover(ctx,c.photo,0,0,W,bandH);
+    const g=ctx.createLinearGradient(0,bandH-220,0,bandH);
     g.addColorStop(0,"rgba(11,29,49,0)"); g.addColorStop(1,"#0f2740");
-    ctx.fillStyle=g; ctx.fillRect(0,bandH-170,W,170);
-    contentTop=bandH+46;
+    ctx.fillStyle=g; ctx.fillRect(0,bandH-220,W,220);
+    contentTop=bandH+GAP;
   }
   topTag(ctx,gState.tag); topLogo(ctx);
-  const px=70, maxW=W-140;
   ctx.textAlign="left"; ctx.textBaseline="top";
-  // título
-  let ts=56; let tl=[];
-  for(; ts>=34; ts-=2){ ctx.font=`900 ${ts}px Arial`; tl=wrapLines(ctx,c.title,maxW); if(tl.length<=3) break; }
-  ctx.fillStyle="#fff"; const tlh=ts*1.08; let ty=contentTop;
-  tl.forEach((l,k)=>ctx.fillText(l,px,ty+k*tlh)); ty+=tl.length*tlh+20;
-  // divisor dourado
-  ctx.strokeStyle=GOLD; ctx.lineWidth=5; ctx.lineCap="round";
-  ctx.beginPath(); ctx.moveTo(px,ty); ctx.lineTo(px+96,ty); ctx.stroke(); ty+=34;
-  // corpo (auto-ajuste)
-  const bottom=1250; let bs=36, bl=[];
-  for(; bs>=22; bs-=2){ ctx.font=`400 ${bs}px Arial`; bl=wrapLines(ctx,c.body,maxW);
-    if(bl.length*(bs*1.42) <= (bottom-ty)) break; }
-  ctx.font=`400 ${bs}px Arial`; ctx.fillStyle="#dbe4ec"; const blh=bs*1.42;
-  bl.forEach((l,k)=>ctx.fillText(l,px,ty+k*blh));
+
+  // centraliza o bloco na área restante (mata o vazio embaixo)
+  const avail=bottom-contentTop;
+  let ty=contentTop+Math.max(0,(avail-m.h)/2);
+
+  ctx.fillStyle="#fff"; ctx.font=`900 ${m.ts}px Arial`;
+  const tlh=m.ts*1.08;
+  m.tl.forEach((l,k)=>ctx.fillText(l,px,ty+k*tlh));
+  ty+=m.tl.length*tlh+RULE_GAP_TOP;
+
+  ctx.strokeStyle=GOLD; ctx.lineWidth=RULE_H; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(px,ty+RULE_H/2); ctx.lineTo(px+110,ty+RULE_H/2); ctx.stroke();
+  ty+=RULE_H+RULE_GAP_BOT;
+
+  ctx.font=`400 ${m.bs}px Arial`; ctx.fillStyle="#dbe4ec";
+  const blh=m.bs*1.42;
+  m.bl.forEach((l,k)=>ctx.fillText(l,px,ty+k*blh));
 }
+
 function drawCincoFinal(ctx){
   const f=gState.final;
   if(f.photo) blurBg(ctx,f.photo,0.72); else navyBg(ctx);
